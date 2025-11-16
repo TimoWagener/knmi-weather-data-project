@@ -1,0 +1,128 @@
+{
+  "version": "1.0",
+  "description": "Load history and status tracking for KNMI weather data pipeline",
+  "last_updated": "2025-11-16T00:00:00Z",
+  "pipeline_status": {
+    "last_full_load": null,
+    "last_incremental_load": null,
+    "total_records_loaded": 32690,
+    "total_stations_active": 2,
+    "data_size_mb": 7.0
+  },
+  "stations": {
+    "hupsel": {
+      "status": "complete",
+      "loaded_ranges": [
+        {
+          "start": "2024-01-01T00:00:00Z",
+          "end": "2025-11-12T00:00:00Z",
+          "loaded_at": "2025-11-12T08:00:00Z",
+          "records": 16345,
+          "layers": [
+            "bronze_raw",
+            "bronze_refined",
+            "silver"
+          ],
+          "data_quality": {
+            "avg_quality_score": 0.796,
+            "outlier_percentage": 1.4,
+            "missing_percentage": 83.3
+          }
+        }
+      ],
+      "gaps": [],
+      "next_update_from": "2025-11-13T00:00:00Z",
+      "historical_complete": false,
+      "target_start_date": "2000-01-01T00:00:00Z"
+    },
+    "deelen": {
+      "status": "complete",
+      "loaded_ranges": [
+        {
+          "start": "2024-01-01T00:00:00Z",
+          "end": "2025-11-12T00:00:00Z",
+          "loaded_at": "2025-11-12T08:00:00Z",
+          "records": 16345,
+          "layers": [
+            "bronze_raw",
+            "bronze_refined",
+            "silver"
+          ],
+          "data_quality": {
+            "avg_quality_score": 0.813,
+            "outlier_percentage": 1.4,
+            "missing_percentage": 50.0
+          }
+        }
+      ],
+      "gaps": [],
+      "next_update_from": "2025-11-13T00:00:00Z",
+      "historical_complete": false,
+      "target_start_date": "2000-01-01T00:00:00Z"
+    },
+    "de_bilt": {
+      "status": "not_started",
+      "loaded_ranges": [],
+      "gaps": [],
+      "next_update_from": "2000-01-01T00:00:00Z",
+      "historical_complete": false,
+      "target_start_date": "2000-01-01T00:00:00Z"
+    },
+    "schiphol": {
+      "status": "not_started",
+      "loaded_ranges": [],
+      "gaps": [],
+      "next_update_from": "2000-01-01T00:00:00Z",
+      "historical_complete": false,
+      "target_start_date": "2000-01-01T00:00:00Z"
+    },
+    "rotterdam": {
+      "status": "not_started",
+      "loaded_ranges": [],
+      "gaps": [],
+      "next_update_from": "2000-01-01T00:00:00Z",
+      "historical_complete": false,
+      "target_start_date": "2000-01-01T00:00:00Z"
+    },
+    "vlissingen": {
+      "status": "not_started",
+      "loaded_ranges": [],
+      "gaps": [],
+      "next_update_from": "2000-01-01T00:00:00Z",
+      "historical_complete": false,
+      "target_start_date": "2000-01-01T00:00:00Z"
+    },
+    "maastricht": {
+      "status": "not_started",
+      "loaded_ranges": [],
+      "gaps": [],
+      "next_update_from": "2000-01-01T00:00:00Z",
+      "historical_complete": false,
+      "target_start_date": "2000-01-01T00:00:00Z"
+    },
+    "eelde": {
+      "status": "not_started",
+      "loaded_ranges": [],
+      "gaps": [],
+      "next_update_from": "2000-01-01T00:00:00Z",
+      "historical_complete": false,
+      "target_start_date": "2000-01-01T00:00:00Z"
+    },
+    "den_helder": {
+      "status": "not_started",
+      "loaded_ranges": [],
+      "gaps": [],
+      "next_update_from": "2000-01-01T00:00:00Z",
+      "historical_complete": false,
+      "target_start_date": "2000-01-01T00:00:00Z"
+    },
+    "twenthe": {
+      "status": "not_started",
+      "loaded_ranges": [],
+      "gaps": [],
+      "next_update_from": "2000-01-01T00:00:00Z",
+      "historical_complete": false,
+      "target_start_date": "2000-01-01T00:00:00Z"
+    }
+  }
+}
