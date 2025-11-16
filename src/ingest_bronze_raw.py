@@ -163,22 +163,35 @@ class BronzeRawIngester:
 
         return chunks
 
-    def ingest(self, date_range_key="full", parameters=None):
+    def ingest(self, date_range_key=None, start_date=None, end_date=None, parameters=None):
         """
         Main ingestion pipeline with chunking
 
         Args:
-            date_range_key: Key from DATE_RANGES config
+            date_range_key: Key from DATE_RANGES config (e.g., 'full', '2024')
+            start_date: Custom start date in ISO format (overrides date_range_key)
+            end_date: Custom end date in ISO format (overrides date_range_key)
             parameters: List of parameters to query (None = all)
         """
         print("="*80)
         print("BRONZE RAW INGESTION: EDR API -> JSON")
         print("="*80)
 
-        # Get date range
-        date_range = DATE_RANGES[date_range_key]
-        start_date = date_range["start"]
-        end_date = date_range["end"]
+        # Determine date range: custom dates take precedence
+        if start_date and end_date:
+            # Use custom dates (already provided)
+            print(f"Using custom date range")
+        elif date_range_key:
+            # Get date range from config
+            date_range = DATE_RANGES[date_range_key]
+            start_date = date_range["start"]
+            end_date = date_range["end"]
+        else:
+            # Default to 'full'
+            print("No date range specified, using default: 'full'")
+            date_range = DATE_RANGES["full"]
+            start_date = date_range["start"]
+            end_date = date_range["end"]
 
         # Generate monthly chunks to avoid API limits
         chunks = self.generate_monthly_chunks(start_date, end_date)
@@ -227,8 +240,17 @@ def main():
     parser.add_argument(
         "--date-range",
         choices=list(DATE_RANGES.keys()),
-        default="full",
-        help="Date range to ingest (default: full = 2024-2025)"
+        help="Date range to ingest (e.g., full, 2024, 2025)"
+    )
+    parser.add_argument(
+        "--start-date",
+        type=str,
+        help="Custom start date in ISO format (e.g., 2020-01-01T00:00:00Z)"
+    )
+    parser.add_argument(
+        "--end-date",
+        type=str,
+        help="Custom end date in ISO format (e.g., 2020-12-31T23:59:59Z)"
     )
     parser.add_argument(
         "--parameters",
@@ -238,10 +260,12 @@ def main():
 
     args = parser.parse_args()
 
-    # Run ingestion
+    # Run ingestion with custom dates or predefined range
     ingester = BronzeRawIngester(args.station)
     ingester.ingest(
         date_range_key=args.date_range,
+        start_date=args.start_date,
+        end_date=args.end_date,
         parameters=args.parameters
     )
 
