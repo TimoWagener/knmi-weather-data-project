@@ -24,14 +24,12 @@ Downloads hourly weather observations from the KNMI EDR API, processes through d
 
 ## 📊 Current Data
 
-- **Stations Loaded**: 2 complete, 8 loading (10 total configured)
-  - ✅ Hupsel (rural, eastern Netherlands)
-  - ✅ Deelen (Veluwe, airport)
-  - 🔄 De Bilt, Schiphol, Rotterdam, Vlissingen, Maastricht, Eelde, Den Helder, Twenthe (loading now)
-- **Coverage**: 316,278 hours (2000-2025, 25+ years per station)
-- **Parameters**: 23 weather measurements (temp, humidity, rainfall, wind, pressure, solar, visibility, etc.)
-- **Storage**: ~292 MB across all layers (Bronze Raw: 206 MB, Refined: 42 MB, Silver: 44 MB)
-- **Quality**: Automated scoring, outlier detection, data validation on all records
+- **Stations Loaded**: All 10 core stations are fully loaded.
+  - ✅ Hupsel, Deelen, De Bilt, Schiphol, Rotterdam, Vlissingen, Maastricht, Eelde, Den Helder, Twenthe
+- **Coverage**: 1990-2025 (36 years per station)
+- **Parameters**: 23+ weather measurements (temp, humidity, rainfall, wind, etc.)
+- **Storage**: ~500 MB and growing (Bronze Raw layer complete)
+- **Quality**: Silver layer (validation, cleaning, scoring) is the next development phase.
 
 ## 🚀 Quick Start
 
@@ -62,14 +60,13 @@ cp .env.example .env
 ### 3. Download Data
 
 ```bash
-# 🚀 v2 Multi-Station Batch Loading (RECOMMENDED - 93.5% fewer API calls!)
-# Load all 10 configured stations (2000-2025, ~90-120 minutes)
-python src/orchestrate_historical_v2.py --stations core_10 --start-year 2000 --end-year 2025 --batch-size 8 --chunk-months 2
+# 🚀 Ingest all data for the 10 core stations (1990-2025)
+# This command is idempotent and will skip already downloaded years.
+python -m data_orchestration.bronze_raw.orchestrate --stations core_10 --start-year 1990 --end-year 2025
 
-# Or manual single-station pipeline (for custom date ranges)
-python src/ingest_bronze_raw.py --station hupsel --start-date "2024-01-01T00:00:00Z" --end-date "2024-12-31T23:59:59Z"
-python src/transform_bronze_refined.py --station hupsel --year 2024
-python src/transform_silver.py --station hupsel --year 2024
+# To run transformations (example for a single station and year)
+python -m src.transform_bronze_refined --station hupsel --year 2024
+# python -m src.transform_silver --station hupsel --year 2024 # (Pending development)
 ```
 
 ### 4. Query the Data
@@ -84,51 +81,49 @@ python src/query_demo.py
 ```
 LocalWeatherDataProject/
 ├── README.md              # This file
-├── CLAUDE.md             # Guidance for Claude Code AI
-├── PROJECT_STATUS.md     # Detailed project status
+├── GEMINI.md             # Current project status and next steps
 ├── requirements.txt      # Python dependencies
 ├── .env.example         # API key template
 ├── .gitignore           # Git ignore rules
 │
-├── src/                 # Main source code
-│   ├── config.py                       # Configuration
-│   ├── ingest_bronze_raw.py            # Download from EDR API (v2 multi-station!)
-│   ├── orchestrate_historical_v2.py    # 🚀 Multi-station batch loader (v2)
+├── data_orchestration/  # CORE: Bronze ingestion orchestrator
+│   └── bronze_raw/
+│       ├── orchestrate.py
+│       ├── station_pipeline.py
+│       ├── api_client.py
+│       └── ...
+│
+├── src/                 # CORE: Transformation logic
+│   ├── config.py                       # Global configuration
 │   ├── transform_bronze_refined.py     # JSON → Parquet
-│   ├── transform_silver.py             # Validate & clean
-│   ├── query_demo.py                   # Demo queries (DuckDB/Polars/Pandas)
-│   └── metadata_manager.py             # Metadata tracking
+│   ├── transform_silver.py             # Parquet → Validated Parquet
+│   └── query_demo.py                   # Demo queries (DuckDB/Polars/Pandas)
 │
 ├── archive/
-│   └── v1_single_station/              # Legacy code (pre-optimization)
+│   ├── legacy_v2/                      # Old v2 multi-station batching scripts
+│   ├── outdated_docs/                  # Old project status and research docs
+│   └── v1_single_station/              # Original single-station scripts
+│
+├── docs/                # Project documentation
+│   ├── architecture/
+│   ├── research/
+│   └── ingestion_strategy/
 │
 ├── metadata/            # Orchestration metadata
-│   ├── stations_config.json         # 10 station registry
-│   ├── load_metadata.json           # Load history tracking
-│   └── pipeline_config.json         # Pipeline settings
+│   ├── stations_config.json
+│   └── bronze_raw/
+│       └── ...
 │
-├── logs/                # Orchestration logs
+├── logs/                # .log and .json structured logs
 │
-├── scripts/             # Utility scripts
-│   ├── test_edr_api.py
-│   ├── test_multi_station_api.py    # Multi-station API tester
-│   └── explore_*.py
+├── data/                # Data files (not in git)
+│   ├── bronze/
+│   │   ├── raw/        # Immutable JSON from API
+│   │   └── refined/    # Queryable Parquet
+│   ├── silver/         # Validated & cleaned
+│   └── gold/           # Aggregated (not yet built)
 │
-├── docs/                # Documentation
-│   ├── API_OPTIMIZATION_OPPORTUNITIES.md  # v2 optimization analysis
-│   ├── MULTI_STATION_OPTIMIZATION_SUMMARY.md  # Complete v2 guide
-│   ├── API_RESEARCH_FINDINGS.md
-│   ├── ARCHITECTURE_PLAN.md
-│   └── EDR_VS_OPEN_DATA_COMPARISON.md
-│
-├── notebooks/           # Jupyter notebooks (future)
-├── tests/              # Unit tests (future)
-└── data/               # Data files (not in git)
-    ├── bronze/
-    │   ├── raw/        # Immutable JSON from API
-    │   └── refined/    # Queryable Parquet
-    ├── silver/         # Validated & cleaned
-    └── gold/           # Aggregated (not yet built)
+└── ...
 ```
 
 ## 🏗️ Architecture
@@ -168,114 +163,9 @@ Silver (Parquet, fixed schema)
 Gold (Business-ready)
 ```
 
-## 📖 Usage Examples
 
-### Multi-Station Batch Loading (v2 - Recommended!)
 
-```bash
-# Load multiple stations efficiently (93.5% fewer API calls!)
-python src/orchestrate_historical_v2.py \
-  --stations core_10 \
-  --start-year 2000 \
-  --end-year 2025 \
-  --batch-size 8 \
-  --chunk-months 2
 
-# Check load status
-python -c "from src.metadata_manager import MetadataManager; MetadataManager().print_status_summary()"
-```
-
-### Single Station (manual pipeline)
-
-```bash
-# See available stations
-python scripts/test_edr_api.py
-
-# Download single station
-python src/ingest_bronze_raw.py --station de_bilt --start-date "2024-01-01T00:00:00Z" --end-date "2024-12-31T23:59:59Z"
-python src/transform_bronze_refined.py --station de_bilt --year 2024
-python src/transform_silver.py --station de_bilt --year 2024
-```
-
-### Query with DuckDB
-
-```python
-import duckdb
-
-con = duckdb.connect()
-
-# Query all stations, all years
-result = con.execute("""
-    SELECT
-        YEAR(timestamp) as year,
-        AVG(temperature_celsius) as avg_temp,
-        SUM(rainfall_mm) as total_rain
-    FROM 'data/silver/**/*.parquet'
-    GROUP BY year
-    ORDER BY year
-""").df()
-
-print(result)
-```
-
-### Incremental Updates (Multi-Station!)
-
-```bash
-# Update ALL 10 stations with yesterday's data (v2 feature - one API call!)
-python src/ingest_bronze_raw.py \
-  --stations hupsel,deelen,de_bilt,schiphol,rotterdam,vlissingen,maastricht,eelde,den_helder,twenthe \
-  --start-date "2025-11-17T00:00:00Z" \
-  --end-date "2025-11-17T23:59:59Z"
-
-# Then transform each (can be automated)
-for station in hupsel deelen de_bilt schiphol rotterdam vlissingen maastricht eelde den_helder twenthe; do
-  python src/transform_bronze_refined.py --station $station --year 2025
-  python src/transform_silver.py --station $station --year 2025
-done
-```
-
-## 🚀 v2 Multi-Station Optimization (NEW!)
-
-**Key Achievement: 93.5% Reduction in API Calls**
-
-### What Changed?
-
-**Before (v1 - Single Station):**
-- Load 8 stations for 25 years: **2,400 API calls**
-- Each station queried separately, each month independently
-- Limited scalability (10-15 stations per session max)
-
-**After (v2 - Multi-Station Batching):**
-- Load 8 stations for 25 years: **156 API calls** (93.5% fewer!)
-- Batch multiple stations in one API call using comma-separated IDs
-- Optimal chunk sizing (2-month chunks, 8 stations per batch)
-- Can load 48-60 stations per session
-
-### Performance Impact
-
-| Metric | v1 Single-Station | v2 Multi-Station | Improvement |
-|--------|-------------------|------------------|-------------|
-| API calls (8 stations, 25 years) | 2,400 | 156 | **93.5% fewer** |
-| Stations per session (1000 limit) | 10-15 | 48-60 | **4-6x more** |
-| Scalability to 70+ stations | Multiple days | 2-3 sessions | **10x faster** |
-
-### Technical Details
-
-```python
-# API supports comma-separated station IDs
-location_param = ",".join(["station1", "station2", "station3"])
-url = f"{EDR_BASE_URL}/collections/{COLLECTION}/locations/{location_param}"
-
-# One call returns data for all stations in CoverageCollection format
-# Automatically split and saved per station for backward compatibility
-```
-
-**Data point calculation:**
-- API limit: 376,000 data points per request
-- Our config: 8 stations × 1,440 hours (2 months) × 23 params = 264,960 points (70% of limit)
-- Safe, efficient, and maximizes throughput!
-
-**See full analysis:** `docs/MULTI_STATION_OPTIMIZATION_SUMMARY.md`
 
 ## 🔧 Configuration
 
@@ -288,13 +178,10 @@ Edit `src/config.py` to customize:
 
 ## 📚 Documentation
 
-- 🚀 **[Multi-Station Optimization Summary](docs/MULTI_STATION_OPTIMIZATION_SUMMARY.md)**: Complete v2 optimization guide
-- 🚀 **[API Optimization Opportunities](docs/API_OPTIMIZATION_OPPORTUNITIES.md)**: Detailed v2 analysis
-- **[Project Status](PROJECT_STATUS.md)**: Current status & comprehensive documentation
-- **[CLAUDE.md](CLAUDE.md)**: Guidance for Claude Code AI assistant
-- **[API Research](docs/API_RESEARCH_FINDINGS.md)**: KNMI API capabilities & limits
-- **[Architecture Plan](docs/ARCHITECTURE_PLAN.md)**: Detailed architecture design
-- **[EDR vs Open Data](docs/EDR_VS_OPEN_DATA_COMPARISON.md)**: API comparison
+- **[GEMINI.md](GEMINI.md)**: Current project status, next steps, and core principles.
+- **[Architecture Docs](docs/architecture/)**: High-level design documents, including the overall Medallion plan and v3 orchestration design.
+- **[Research Docs](docs/research/)**: Deep dives into API optimization and comparisons.
+- **[Ingestion Strategy](docs/ingestion_strategy/)**: Detailed plans and findings related to the Bronze ingestion process.
 
 ## 🤝 Contributing
 
@@ -310,38 +197,6 @@ MIT License - feel free to use and modify
 - **EDR API** following OGC Environmental Data Retrieval standards
 - Built with **DuckDB**, **Parquet**, and **Python**
 
-## 📧 Support
 
-For issues or questions:
-1. Check [PROJECT_STATUS.md](PROJECT_STATUS.md) for detailed documentation
-2. Review [docs/](docs/) for architecture details
-3. See KNMI API docs: https://developer.dataplatform.knmi.nl/
 
----
 
-## 🎯 Current Status
-
-**Last Updated**: 2025-11-17
-**Version**: v2 (Multi-Station Optimization)
-**Status**:
-- ✅ v2 Multi-station optimization complete (93.5% API reduction)
-- ✅ Bronze & Silver layers production-ready
-- ✅ 2 stations fully loaded (Hupsel, Deelen)
-- 🔄 8 additional stations loading now
-- ⏳ Gold layer pending (future)
-
-**Data**:
-- 316,278 hours across 2 stations (2000-2025)
-- 10 stations configured and ready
-- ~1.75 million hours when current load completes
-
-**Performance**:
-- **93.5% fewer API calls** vs v1 single-station approach
-- Can load 48-60 stations per session (under 1000 API call limit)
-- Entire KNMI network (70+ stations) feasible in 2-3 sessions
-
-**Next Steps**:
-1. Complete 8-station load (in progress)
-2. Build automated daily updater
-3. Expand to 20-30 more stations
-4. Create Gold layer for aggregated analytics
