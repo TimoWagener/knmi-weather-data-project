@@ -30,16 +30,57 @@ SILVER_DIR = BASE_DATA_DIR / "silver"
 GOLD_DIR = BASE_DATA_DIR / "gold"
 
 # Station Configuration
+# Core 10 stations covering all regions of the Netherlands
 STATIONS = {
     "hupsel": {
         "id": "0-20000-0-06283",
         "name": "Hupsel",
-        "description": "Primary weather station near Doetinchem"
+        "description": "Agricultural research station in eastern Netherlands"
     },
     "deelen": {
         "id": "0-20000-0-06275",
-        "name": "Deelen Airport",
-        "description": "Alternative station near Doetinchem"
+        "name": "Deelen",
+        "description": "Standard meteorological station near Arnhem"
+    },
+    "de_bilt": {
+        "id": "0-20000-0-06260",
+        "name": "De Bilt",
+        "description": "KNMI headquarters station, reference station for Netherlands"
+    },
+    "schiphol": {
+        "id": "0-20000-0-06240",
+        "name": "Schiphol",
+        "description": "Amsterdam Airport, important for aviation and urban climate"
+    },
+    "rotterdam": {
+        "id": "0-20000-0-06344",
+        "name": "Rotterdam",
+        "description": "Major port city, urban heat island studies"
+    },
+    "vlissingen": {
+        "id": "0-20000-0-06310",
+        "name": "Vlissingen",
+        "description": "Coastal station on North Sea, maritime climate"
+    },
+    "maastricht": {
+        "id": "0-20000-0-06380",
+        "name": "Maastricht",
+        "description": "Southern Netherlands, hilly terrain, different climate zone"
+    },
+    "eelde": {
+        "id": "0-20000-0-06280",
+        "name": "Eelde",
+        "description": "Northern Netherlands, Groningen Airport"
+    },
+    "den_helder": {
+        "id": "0-20000-0-06235",
+        "name": "Den Helder",
+        "description": "Northern coastal station, North Sea influence"
+    },
+    "twenthe": {
+        "id": "0-20000-0-06290",
+        "name": "Twenthe",
+        "description": "Eastern Netherlands, Enschede Airport"
     }
 }
 

@@ -1,0 +1,121 @@
+{
+  "version": "1.0",
+  "description": "Pipeline configuration for KNMI weather data orchestration",
+  "last_updated": "2025-11-16",
+  "orchestration": {
+    "mode": "auto",
+    "description": "auto = smart decision, full-load = historical backfill, incremental = daily updates",
+    "schedule": {
+      "incremental_updates": "daily",
+      "run_time": "03:00",
+      "timezone": "Europe/Amsterdam",
+      "enabled": false
+    },
+    "parallelization": {
+      "max_concurrent_requests": 20,
+      "max_concurrent_stations": 5,
+      "max_concurrent_transforms": 3,
+      "chunk_size_months": 12,
+      "description": "Parallel processing settings - respects API limits"
+    },
+    "retry": {
+      "max_attempts": 3,
+      "backoff_seconds": 60,
+      "exponential_backoff": true,
+      "retry_on_errors": [
+        "timeout",
+        "rate_limit",
+        "server_error"
+      ]
+    }
+  },
+  "api": {
+    "endpoint": "https://api.dataplatform.knmi.nl/edr/v1",
+    "collection": "hourly-in-situ-meteorological-observations-validated",
+    "rate_limits": {
+      "requests_per_second": 200,
+      "requests_per_hour": 1000,
+      "data_points_per_request": 376000,
+      "description": "KNMI EDR API limits for registered users"
+    },
+    "timeout_seconds": 30,
+    "connection_pool_size": 20
+  },
+  "storage": {
+    "max_disk_usage_gb": 50,
+    "cleanup_enabled": false,
+    "compression": "snappy",
+    "partitioning_scheme": "station_id/year/month",
+    "description": "Storage management and partitioning strategy"
+  },
+  "monitoring": {
+    "enabled": true,
+    "log_level": "INFO",
+    "log_file": "logs/orchestration.log",
+    "progress_bars": true,
+    "alert_on_failure": true,
+    "alert_methods": [
+      "log",
+      "console"
+    ],
+    "metrics_enabled": true,
+    "metrics_file": "logs/pipeline_metrics.json"
+  },
+  "data_quality": {
+    "min_quality_score": 0.7,
+    "validate_on_load": true,
+    "quarantine_bad_data": false,
+    "max_outlier_percentage": 10.0,
+    "max_missing_percentage": 90.0,
+    "description": "Data quality thresholds and validation settings"
+  },
+  "historical_load": {
+    "default_start_year": 2000,
+    "default_end_year": 2025,
+    "chunk_strategy": "yearly",
+    "chunk_strategy_options": [
+      "monthly",
+      "quarterly",
+      "yearly",
+      "auto"
+    ],
+    "auto_detect_optimal_chunk": true,
+    "description": "Historical backfill configuration"
+  },
+  "incremental_load": {
+    "lookback_hours": 48,
+    "max_gap_days": 7,
+    "auto_backfill_gaps": true,
+    "description": "Incremental update settings - fetches only new data"
+  },
+  "pipeline_layers": {
+    "bronze_raw": {
+      "enabled": true,
+      "format": "json",
+      "preserve_original": true
+    },
+    "bronze_refined": {
+      "enabled": true,
+      "format": "parquet",
+      "schema_enforcement": "on_read"
+    },
+    "silver": {
+      "enabled": true,
+      "format": "parquet",
+      "schema_enforcement": "strict",
+      "validation_enabled": true
+    },
+    "gold": {
+      "enabled": false,
+      "format": "parquet",
+      "description": "Not yet implemented - aggregated business layer"
+    }
+  },
+  "performance": {
+    "use_async": true,
+    "use_polars": true,
+    "use_pandas_fallback": true,
+    "memory_limit_mb": 4096,
+    "description": "Performance optimization settings"
+  }
+}

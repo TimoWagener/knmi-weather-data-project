@@ -37,6 +37,7 @@ data/
 *.csv
 *.parquet
 *.json
+!metadata/*.json
 !.env.example
 
 # IDE

@@ -1,0 +1,211 @@
+{
+  "version": "1.0",
+  "description": "Station registry for KNMI weather data pipeline",
+  "last_updated": "2025-11-16",
+  "stations": {
+    "hupsel": {
+      "id": "0-20000-0-06283",
+      "name": "Hupsel",
+      "latitude": 52.067,
+      "longitude": 6.650,
+      "elevation_m": 29.0,
+      "region": "East",
+      "province": "Gelderland",
+      "type": "agricultural",
+      "active": true,
+      "priority": "high",
+      "load_from": "2000-01-01",
+      "description": "Agricultural research station in eastern Netherlands"
+    },
+    "deelen": {
+      "id": "0-20000-0-06275",
+      "name": "Deelen",
+      "latitude": 52.060,
+      "longitude": 5.873,
+      "elevation_m": 49.0,
+      "region": "Center-East",
+      "province": "Gelderland",
+      "type": "standard",
+      "active": true,
+      "priority": "high",
+      "load_from": "2000-01-01",
+      "description": "Standard meteorological station near Arnhem"
+    },
+    "de_bilt": {
+      "id": "0-20000-0-06260",
+      "name": "De Bilt",
+      "latitude": 52.103,
+      "longitude": 5.177,
+      "elevation_m": 2.0,
+      "region": "Center",
+      "province": "Utrecht",
+      "type": "headquarters",
+      "active": true,
+      "priority": "critical",
+      "load_from": "2000-01-01",
+      "description": "KNMI headquarters station, reference station for Netherlands"
+    },
+    "schiphol": {
+      "id": "0-20000-0-06240",
+      "name": "Schiphol",
+      "latitude": 52.318,
+      "longitude": 4.790,
+      "elevation_m": -3.0,
+      "region": "West",
+      "province": "Noord-Holland",
+      "type": "airport",
+      "active": true,
+      "priority": "critical",
+      "load_from": "2000-01-01",
+      "description": "Amsterdam Airport, important for aviation and urban climate"
+    },
+    "rotterdam": {
+      "id": "0-20000-0-06344",
+      "name": "Rotterdam",
+      "latitude": 51.962,
+      "longitude": 4.447,
+      "elevation_m": -4.0,
+      "region": "Southwest",
+      "province": "Zuid-Holland",
+      "type": "urban",
+      "active": true,
+      "priority": "high",
+      "load_from": "2000-01-01",
+      "description": "Major port city, urban heat island studies"
+    },
+    "vlissingen": {
+      "id": "0-20000-0-06310",
+      "name": "Vlissingen",
+      "latitude": 51.442,
+      "longitude": 3.596,
+      "elevation_m": 5.0,
+      "region": "Southwest",
+      "province": "Zeeland",
+      "type": "coastal",
+      "active": true,
+      "priority": "high",
+      "load_from": "2000-01-01",
+      "description": "Coastal station on North Sea, maritime climate"
+    },
+    "maastricht": {
+      "id": "0-20000-0-06380",
+      "name": "Maastricht",
+      "latitude": 50.906,
+      "longitude": 5.762,
+      "elevation_m": 114.0,
+      "region": "South",
+      "province": "Limburg",
+      "type": "hilly",
+      "active": true,
+      "priority": "high",
+      "load_from": "2000-01-01",
+      "description": "Southern Netherlands, hilly terrain, different climate zone"
+    },
+    "eelde": {
+      "id": "0-20000-0-06280",
+      "name": "Eelde",
+      "latitude": 53.125,
+      "longitude": 6.585,
+      "elevation_m": 5.0,
+      "region": "North",
+      "province": "Drenthe",
+      "type": "airport",
+      "active": true,
+      "priority": "high",
+      "load_from": "2000-01-01",
+      "description": "Northern Netherlands, Groningen Airport"
+    },
+    "den_helder": {
+      "id": "0-20000-0-06235",
+      "name": "Den Helder",
+      "latitude": 52.924,
+      "longitude": 4.781,
+      "elevation_m": 2.0,
+      "region": "North",
+      "province": "Noord-Holland",
+      "type": "coastal",
+      "active": true,
+      "priority": "high",
+      "load_from": "2000-01-01",
+      "description": "Northern coastal station, North Sea influence"
+    },
+    "twenthe": {
+      "id": "0-20000-0-06290",
+      "name": "Twenthe",
+      "latitude": 52.274,
+      "longitude": 6.891,
+      "elevation_m": 34.0,
+      "region": "East",
+      "province": "Overijssel",
+      "type": "airport",
+      "active": true,
+      "priority": "high",
+      "load_from": "2000-01-01",
+      "description": "Eastern Netherlands, Enschede Airport"
+    }
+  },
+  "station_groups": {
+    "core_10": [
+      "hupsel",
+      "deelen",
+      "de_bilt",
+      "schiphol",
+      "rotterdam",
+      "vlissingen",
+      "maastricht",
+      "eelde",
+      "den_helder",
+      "twenthe"
+    ],
+    "coastal": [
+      "vlissingen",
+      "den_helder",
+      "schiphol"
+    ],
+    "inland": [
+      "hupsel",
+      "de_bilt",
+      "maastricht",
+      "deelen"
+    ],
+    "urban": [
+      "rotterdam",
+      "schiphol",
+      "de_bilt"
+    ],
+    "airports": [
+      "schiphol",
+      "eelde",
+      "twenthe"
+    ],
+    "critical_infrastructure": [
+      "de_bilt",
+      "schiphol"
+    ],
+    "currently_loaded": [
+      "hupsel",
+      "deelen"
+    ],
+    "not_loaded": [
+      "de_bilt",
+      "schiphol",
+      "rotterdam",
+      "vlissingen",
+      "maastricht",
+      "eelde",
+      "den_helder",
+      "twenthe"
+    ]
+  },
+  "metadata": {
+    "total_stations": 10,
+    "total_available_knmi": 77,
+    "coverage": "Strategic selection covering all regions and climate types",
+    "selection_criteria": [
+      "Geographic diversity (north, south, east, west, coastal, inland)",
+      "Climate type representation (maritime, continental, urban)",
+      "Elevation variety (from -4m to 114m)",
+      "Operational importance (airports, headquarters, research)"
+    ]
+  }
+}

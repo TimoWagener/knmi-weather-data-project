@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Production-ready data lakehouse for KNMI weather data** using medallion architecture (Bronze/Silver/Gold layers) with automated orchestration.
 
-Downloads hourly weather observations from KNMI EDR API, processes through data quality layers, and provides efficient querying with multiple tools. Currently contains **316,278 hours of data (2000-2025)** for 2 stations: Hupsel and Deelen. **8 more stations loading now with v2 multi-station optimization (93.5% fewer API calls).**
+Downloads hourly weather observations from KNMI EDR API, processes through data quality layers, and provides efficient querying with multiple tools. Currently contains **316,278 hours of data (2000-2025)** for 2 stations: Hupsel and Deelen. **8 more stations configured and ready to load.**
 
 **Key Technologies:**
 - KNMI EDR API (Environmental Data Retrieval) - primary source
@@ -41,46 +41,34 @@ pip install -r requirements.txt
 # Claude cannot read this file (security feature)
 ```
 
-### Historical Data Loading (Recommended - v2 Multi-Station)
+### Historical Data Loading (Recommended)
 
 **IMPORTANT:** All commands must be run from the project root directory.
 
-**🚀 NEW: v2 Multi-Station Batch Loading (93.5% fewer API calls!)**
-
 **Load all 10 configured stations (2000-2025):**
 ```bash
-# Multi-station batch load (~80-90 minutes for 8 stations, 2000-2025)
-# Uses optimized batching: 8 stations per API call, 2-month chunks
-python src/orchestrate_historical_v2.py --stations not_loaded --start-year 2000 --end-year 2025 --batch-size 8 --chunk-months 2
-
-# Or for all 10 stations (if starting fresh)
-python src/orchestrate_historical_v2.py --stations core_10 --start-year 2000 --end-year 2025 --batch-size 8 --chunk-months 2
+# Parallel bulk load (45-60 minutes for all 10 stations)
+python src/orchestrate_historical.py --stations core_10 --start-year 2000 --end-year 2025 --max-workers 5
 
 # Check load status
 python -c "from src.metadata_manager import MetadataManager; MetadataManager().print_status_summary()"
 ```
 
-**Load specific station groups:**
+**Load specific date range:**
 ```bash
-# Load coastal stations
-python src/orchestrate_historical_v2.py --stations coastal --start-year 2000 --end-year 2025 --batch-size 3 --chunk-months 2
+# Load 2020-2025 for currently loaded stations
+python src/orchestrate_historical.py --stations currently_loaded --start-year 2020 --end-year 2025
 
-# Load single station (backward compatible)
-python src/orchestrate_historical_v2.py --station de_bilt --start-year 2000 --end-year 2025
+# Load single station
+python src/orchestrate_historical.py --station de_bilt --start-year 2000 --end-year 2025
 ```
-
-**Legacy v1 (archived):**
-Old single-station loader available in `archive/v1_single_station/` for fallback.
 
 ### Manual Pipeline (for custom date ranges)
 
 **Full pipeline for a station:**
 ```bash
-# 1. Bronze Raw: Download from EDR API (single station)
+# 1. Bronze Raw: Download from EDR API
 python src/ingest_bronze_raw.py --station hupsel --start-date "2024-01-01T00:00:00Z" --end-date "2024-12-31T23:59:59Z"
-
-# OR multi-station (NEW v2 feature!)
-python src/ingest_bronze_raw.py --stations hupsel,deelen,de_bilt --start-date "2024-01-01T00:00:00Z" --end-date "2024-12-31T23:59:59Z"
 
 # 2. Bronze Refined: Convert to Parquet
 python src/transform_bronze_refined.py --station hupsel --year 2024
@@ -91,13 +79,8 @@ python src/transform_silver.py --station hupsel --year 2024
 
 **Incremental updates (add latest data):**
 ```bash
-# Single station
+# Get yesterday's data
 python src/ingest_bronze_raw.py --station hupsel --start-date "2025-11-17T00:00:00Z" --end-date "2025-11-17T23:59:59Z"
-
-# ALL stations at once (future daily updater will use this!)
-python src/ingest_bronze_raw.py --stations hupsel,deelen,de_bilt,schiphol,rotterdam,vlissingen,maastricht,eelde,den_helder,twenthe --start-date "2025-11-17T00:00:00Z" --end-date "2025-11-17T23:59:59Z"
-
-# Then transform each
 python src/transform_bronze_refined.py --station hupsel --year 2025
 python src/transform_silver.py --station hupsel --year 2025
 ```
@@ -190,11 +173,10 @@ data/
 - Scalable: Works for 1-100 stations
 - Perfect for incremental updates
 
-**Why multi-station batching with bi-monthly chunks? (v2 optimization)**
-- **Multi-station batching**: API supports comma-separated station IDs - 93.5% fewer API calls!
-- **Bi-monthly chunks**: 2-month chunks with 8 stations = 264,960 data points (70% of 376K limit)
-- **Result**: 8 stations × 25 years = 156 API calls (vs 2,400 single-station!)
-- **Scalability**: Can load 48-60 stations per session (under 1000 call limit)
+**Why yearly chunks for historical loads?**
+- Monthly: Too many API calls (300+ per station for 25 years)
+- Yearly: Sweet spot (~30 chunks per station)
+- 5-year: Risk of hitting API limits
 
 **Why schema-on-read in Bronze Refined?**
 - API may add new fields → automatically preserved
@@ -208,10 +190,7 @@ data/
 - Auth: Bearer token in `Authorization` header
 - Rate: 200 req/sec, 1000 req/hour (registered key)
 - Limit: ~376K data points per request (hours × params × stations)
-- **v2 Solution**: Multi-station batching + bi-monthly chunks
-  - 8 stations × 1,440 hours × 23 params = 264,960 points (70% of limit)
-  - One API call loads 8 stations for 2 months!
-  - 93.5% fewer API calls vs single-station approach
+- Solution: Chunk by year (~8,640 hours × 23 params = ~200K points)
 
 **API Keys (Secure):**
 - Location: `C:\AI-Projects\.env` (parent directory)
@@ -221,32 +200,26 @@ data/
 
 ### Project Structure
 
-**Recent Changes:**
-- **2025-11-17**: 🚀 v2 Multi-station optimization - 93.5% fewer API calls!
-- **2025-11-16**: Added orchestration and metadata tracking
+**Recent Changes (2025-11-16):**
+Added orchestration and metadata tracking:
 
 ```
 LocalWeatherDataProject/
 ├── src/                     # Core pipeline scripts
-│   ├── config.py                       # Configuration (10 stations, API keys, paths)
-│   ├── ingest_bronze_raw.py            # EDR API → Bronze Raw (v2 multi-station!)
-│   ├── orchestrate_historical_v2.py    # Multi-station batch loader (NEW v2)
-│   ├── transform_bronze_refined.py     # JSON → Parquet
-│   ├── transform_silver.py             # Parquet → Silver
-│   ├── query_demo.py                   # Multi-tool query demos
-│   └── metadata_manager.py             # Metadata tracking
-├── archive/
-│   └── v1_single_station/              # Legacy single-station code (backup)
-├── metadata/                # Orchestration metadata
+│   ├── config.py           # Configuration (10 stations, API keys, paths)
+│   ├── ingest_bronze_raw.py         # EDR API → Bronze Raw
+│   ├── transform_bronze_refined.py  # JSON → Parquet
+│   ├── transform_silver.py          # Parquet → Silver
+│   ├── query_demo.py                # Multi-tool query demos
+│   ├── metadata_manager.py          # Metadata tracking (NEW)
+│   └── orchestrate_historical.py    # Parallel loader (NEW)
+├── metadata/                # Orchestration metadata (NEW)
 │   ├── stations_config.json         # 10 station registry
 │   ├── load_metadata.json           # Load history tracking
 │   └── pipeline_config.json         # Pipeline settings
 ├── logs/                    # Orchestration logs
 ├── scripts/                 # Utility and test scripts
-│   └── test_multi_station_api.py    # Multi-station API tester (NEW)
 ├── docs/                    # Research and planning
-│   ├── API_OPTIMIZATION_OPPORTUNITIES.md  # v2 optimization analysis (NEW)
-│   └── MULTI_STATION_OPTIMIZATION_SUMMARY.md  # Complete v2 guide (NEW)
 ├── tests/                   # Test files
 └── data/                    # Data lakehouse
 ```
@@ -263,9 +236,8 @@ See `docs/STRUCTURE_REORGANIZATION.md` for reorganization details (2025-11-12).
 
 **To load more stations:**
 ```bash
-# All 10 stations already configured in metadata/stations_config.json
-# Use v2 multi-station optimizer for maximum efficiency!
-python src/orchestrate_historical_v2.py --stations core_10 --start-year 2000 --end-year 2025 --batch-size 8 --chunk-months 2
+# All stations already configured in metadata/stations_config.json
+python src/orchestrate_historical.py --stations core_10 --start-year 2000 --end-year 2025
 ```
 
 ## Orchestration Features (NEW)
@@ -288,35 +260,27 @@ mm.get_station_info('hupsel')  # Get station metadata
 mm.get_stations_needing_load('core_10')  # Find incomplete stations
 ```
 
-### Historical Orchestration (v2 - Multi-Station Optimization)
+### Historical Orchestration
 
-**🚀 v2 Features (93.5% fewer API calls!):**
-- **Multi-station batching**: Query multiple stations in one API call
-- **Optimal chunking**: Dynamic calculation of chunk size based on batch size
-- **Smart data point limits**: Maximizes efficiency while staying under 376K limit
-- Progress tracking with detailed logging
+**Features:**
+- Parallel downloads (configurable workers)
+- Smart chunking (yearly for efficiency)
+- Progress tracking with tqdm
 - Automatic retry on failure
 - Resume capability (skips already-loaded)
-- Respects API rate limits (well under 200 req/sec)
-
-**Performance:**
-- v1 (single-station): 2,400 API calls for 8 stations × 25 years
-- v2 (multi-station): 156 API calls for same data (93.5% reduction!)
-- Enables loading 48-60 stations per session (under 1000 call limit)
+- Respects API rate limits
 
 **Usage:**
 ```bash
-# Load all configured stations with optimal settings
-python src/orchestrate_historical_v2.py --stations core_10 --start-year 2000 --end-year 2025 --batch-size 8 --chunk-months 2
+# Load all configured stations
+python src/orchestrate_historical.py --stations core_10 --start-year 2000 --end-year 2025
 
-# Load specific station group
-python src/orchestrate_historical_v2.py --stations coastal --start-year 2000 --end-year 2025 --batch-size 3 --chunk-months 2
+# Custom concurrency
+python src/orchestrate_historical.py --stations core_10 --max-workers 10
 
-# Single station (backward compatible with v1)
-python src/orchestrate_historical_v2.py --station de_bilt --start-year 2000 --end-year 2025
+# Force reload (skip resume)
+python src/orchestrate_historical.py --stations currently_loaded --force
 ```
-
-**Legacy v1:** Available in `archive/v1_single_station/orchestrate_historical.py` for fallback.
 
 ## Robustness Improvements (2025-11-16)
 
@@ -341,14 +305,13 @@ current = current.replace(month=current.month + 1, day=1)
 ## Quick Tips for Claude
 
 **When loading historical data:**
-- 🚀 Use `orchestrate_historical_v2.py` for bulk loads (93.5% fewer API calls!)
-- Default: `--batch-size 8 --chunk-months 2` (optimal for most scenarios)
+- Use `orchestrate_historical.py` for bulk loads (not individual scripts)
 - Check `metadata/load_metadata.json` for current status
-- Legacy v1 available in `archive/v1_single_station/` if needed
+- Use `--force` flag to reload already-loaded data
 
 **When adding new stations:**
 - Already configured in metadata (10 total)
-- v2 command: `python src/orchestrate_historical_v2.py --stations core_10 --start-year 2000 --end-year 2025 --batch-size 8 --chunk-months 2`
+- Just run: `python src/orchestrate_historical.py --stations core_10`
 
 **When querying data:**
 - DuckDB: Best for SQL queries
@@ -367,9 +330,9 @@ current = current.replace(month=current.month + 1, day=1)
 
 ## Common Tasks
 
-**Load all 10 stations (recommended first step - v2 optimized!):**
+**Load all 10 stations (recommended first step):**
 ```bash
-python src/orchestrate_historical_v2.py --stations core_10 --start-year 2000 --end-year 2025 --batch-size 8 --chunk-months 2
+python src/orchestrate_historical.py --stations core_10 --start-year 2000 --end-year 2025 --max-workers 5
 ```
 
 **Check what's loaded:**
@@ -377,15 +340,12 @@ python src/orchestrate_historical_v2.py --stations core_10 --start-year 2000 --e
 python -c "from src.metadata_manager import MetadataManager; MetadataManager().print_status_summary()"
 ```
 
-**Get latest data (incremental update - multi-station!):**
+**Get latest data (incremental update):**
 ```bash
-# All 10 stations at once (v2 feature!)
-python src/ingest_bronze_raw.py --stations hupsel,deelen,de_bilt,schiphol,rotterdam,vlissingen,maastricht,eelde,den_helder,twenthe --start-date "2025-11-17T00:00:00Z" --end-date "2025-11-17T23:59:59Z"
-
-# Then transform each station
+# For each loaded station
+python src/ingest_bronze_raw.py --station hupsel --start-date "2025-11-17T00:00:00Z" --end-date "2025-11-17T23:59:59Z"
 python src/transform_bronze_refined.py --station hupsel --year 2025
 python src/transform_silver.py --station hupsel --year 2025
-# (repeat for other stations)
 ```
 
 **Query complete dataset:**
@@ -402,12 +362,10 @@ con.execute("SELECT station_id, COUNT(*) as hours, MIN(timestamp) as start, MAX(
 
 ## Performance Notes
 
-**Loading Performance (v2 Multi-Station):**
-- **API efficiency**: 93.5% fewer calls vs v1 single-station
-- 25 years (8 stations): ~80-90 minutes (156 API calls vs 2,400 single-station!)
-- 25 years (10 stations): ~90-120 minutes estimated
-- **Scalability**: Can load 48-60 stations per session (under 1000 API call limit)
-- **Path to 70+ stations**: 2-3 sessions total (2-3 hours for entire KNMI network!)
+**Loading Performance:**
+- 1 year (1 station): ~12 seconds
+- 25 years (2 stations): ~8 minutes with parallel loading
+- 25 years (10 stations): ~45-60 minutes with 5 workers
 
 **Query Performance:**
 - Polars: 1.18x faster than Pandas
@@ -445,12 +403,10 @@ con.execute("SELECT station_id, COUNT(*) as hours, MIN(timestamp) as start, MAX(
    - Use `--force` to reload
    - Check `load_metadata.json` for status
 
-6. **v2 Multi-Station Optimization (NEW - 2025-11-17):**
-   - Always use `orchestrate_historical_v2.py` for new loads
-   - Default settings: `--batch-size 8 --chunk-months 2` (optimal)
-   - Legacy v1 code archived in `archive/v1_single_station/`
-   - 93.5% fewer API calls = massive scalability improvement
-   - Can query multiple stations in single API call using comma-separated IDs
+6. **Parallel Loading:**
+   - Default: 5 workers (safe for most systems)
+   - Can increase to 10 for faster loads
+   - Respects API rate limits (200 req/sec)
 
 ## Next Steps
 

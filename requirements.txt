@@ -6,3 +6,6 @@ python-dotenv
 pyarrow
 duckdb
 polars
+tqdm
+aiohttp
+aiofiles
