@@ -185,6 +185,16 @@
     "currently_loaded": [
       "hupsel",
       "deelen"
+    ],
+    "not_loaded": [
+      "de_bilt",
+      "schiphol",
+      "rotterdam",
+      "vlissingen",
+      "maastricht",
+      "eelde",
+      "den_helder",
+      "twenthe"
     ]
   },
   "metadata": {
