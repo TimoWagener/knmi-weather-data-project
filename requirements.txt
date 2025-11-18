@@ -9,3 +9,4 @@ polars
 tqdm
 aiohttp
 aiofiles
+tenacity
