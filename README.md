@@ -24,12 +24,13 @@ Downloads hourly weather observations from the KNMI EDR API, processes through d
 
 ## 📊 Current Data
 
-- **Stations Loaded**: All 10 core stations are fully loaded.
+- **Stations Loaded**: All 10 core stations are fully loaded
   - ✅ Hupsel, Deelen, De Bilt, Schiphol, Rotterdam, Vlissingen, Maastricht, Eelde, Den Helder, Twenthe
-- **Coverage**: 1990-2025 (36 years per station)
+- **Coverage**: 1990-2025 (36 years per station = 360 station-years)
 - **Parameters**: 23+ weather measurements (temp, humidity, rainfall, wind, etc.)
-- **Storage**: ~500 MB and growing (Bronze Raw layer complete)
-- **Quality**: Silver layer (validation, cleaning, scoring) is the next development phase.
+- **Bronze Raw**: ~1.3 GB JSON (360 station-years) ✅ COMPLETE
+- **Bronze Refined**: ~200 MB Parquet with monthly partitioning ✅ COMPLETE
+- **Next Phase**: Silver layer (validation, cleaning, quality scoring)
 
 ## 🚀 Quick Start
 
@@ -57,16 +58,20 @@ cp .env.example .env
 # Get keys from: https://developer.dataplatform.knmi.nl/
 ```
 
-### 3. Download Data
+### 3. Download and Transform Data
 
 ```bash
-# 🚀 Ingest all data for the 10 core stations (1990-2025)
-# This command is idempotent and will skip already downloaded years.
+# 🚀 STEP 1: Ingest Bronze Raw data (JSON from API)
+# This command is idempotent and will skip already downloaded years
 python -m data_orchestration.bronze_raw.orchestrate --stations core_10 --start-year 1990 --end-year 2025
 
-# To run transformations (example for a single station and year)
-python -m src.transform_bronze_refined --station hupsel --year 2024
-# python -m src.transform_silver --station hupsel --year 2024 # (Pending development)
+# 🚀 STEP 2: Transform to Bronze Refined (Parquet with monthly partitioning)
+# This command is idempotent and will skip already transformed months
+python -m data_orchestration.bronze_refined.orchestrate --stations core_10 --start-year 1990 --end-year 2025
+
+# 📊 STEP 3: Transform to Silver layer (validation, quality scoring)
+# Coming soon - currently in development
+# python -m data_orchestration.silver.orchestrate --stations core_10 --start-year 1990 --end-year 2025
 ```
 
 ### 4. Query the Data
@@ -130,22 +135,25 @@ LocalWeatherDataProject/
 
 ### Medallion Layers
 
-**Bronze Raw** (Immutable Source of Truth)
+**Bronze Raw** (Immutable Source of Truth) ✅
 - Format: JSON (exact EDR API responses)
 - Purpose: Compliance, reprocessing, debugging
-- Size: ~5.7 MB for 2024-2025
+- Size: ~1.3 GB for 360 station-years
+- Status: PRODUCTION-READY
 
-**Bronze Refined** (Schema-on-Read)
-- Format: Parquet (columnar, compressed)
+**Bronze Refined** (Schema-on-Read) ✅
+- Format: Parquet (columnar, compressed, monthly partitioned)
 - Schema: Dynamic (preserves all source fields)
-- Size: ~650 KB for 2024-2025
+- Compression: ~11x (3.76 MB JSON → ~330 KB Parquet per year)
+- Size: ~200 MB for full dataset
+- Status: PRODUCTION-READY
 
-**Silver** (Validated & Cleaned)
+**Silver** (Validated & Cleaned) 🚧
 - Format: Parquet with fixed schema
 - Features: Quality scoring, outlier detection, deduplication
-- Size: ~750 KB for 2024-2025
+- Status: IN DEVELOPMENT
 
-**Gold** (Not Yet Built)
+**Gold** (Business Intelligence) 📋
 - Purpose: Aggregated metrics, multi-station comparisons
 - Future: Daily summaries, station comparisons, dashboards
 
